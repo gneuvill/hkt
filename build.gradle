@@ -1,14 +1,21 @@
+
+buildscript {
+    wrapper {
+        gradleVersion = "7.4"
+        distributionType = Wrapper.DistributionType.ALL
+    }
+}
+
 plugins {
-  id 'com.jfrog.artifactory' version '4.9.8'
-  id 'org.javamodularity.moduleplugin' version '1.6.0'
+  id 'com.jfrog.artifactory' version '4.27.0'
   id 'idea'
-  id 'java'
-  id 'maven'
+  id 'java-library'
+  id 'maven-publish'
 }
 
 defaultTasks 'build'
 
-sourceCompatibility = '1.9'
+sourceCompatibility = '17'
 
 repositories {
   mavenCentral()
@@ -21,7 +28,7 @@ ext {
   hktBaseVersion = '0.10.0'
   hktVersion = hktBaseVersion + (isSnapshot ? '-SNAPSHOT' : '')
 
-  autoService = 'com.google.auto.service:auto-service:1.0-rc6'
+  autoService = 'com.google.auto.service:auto-service:1.0.1'
   derive4jVersion = '1.1.1'
   derive4jAnnotation = "org.derive4j:derive4j-annotation:$derive4jVersion"
 }
@@ -36,22 +43,21 @@ dependencies {
   annotationProcessor "org.derive4j:derive4j:$derive4jVersion"
   annotationProcessor autoService
 
-  testCompile 'junit:junit:4.12'
-  testCompile('com.google.testing.compile:compile-testing:0.18') {
+  testImplementation 'junit:junit:4.13.2'
+  testImplementation('com.google.testing.compile:compile-testing:0.19') {
     exclude module: 'auto-value'
   }
+  testImplementation rootProject
+
   testCompileOnly derive4jAnnotation
   testCompileOnly autoService
 
   testAnnotationProcessor rootProject
-  testImplementation rootProject
+
 }
 
 test {
   testLogging.showStandardStreams = true
-  moduleOptions {
-    runOnClasspath = true
-  }
 }
 
 sourceSets {
@@ -68,9 +74,6 @@ tasks.withType(JavaCompile) {
 task myJavadocs(type: Javadoc) {
   source = sourceSets.main.java + sourceSets.generated.java
   classpath = sourceSets.main.compileClasspath
-  doFirst {
-    options.addStringOption('-module-path', classpath.asPath)
-  }
   verbose = true
 }
 
@@ -84,32 +87,38 @@ task sourcesJar(type: Jar) {
   from sourceSets.main.allSource + sourceSets.generated.java
 }
 
+jar {
+    manifest {
+        attributes('Automatic-Module-Name': 'derive4j.hkt')
+    }
+}
+
 artifacts {
   archives jar
   archives javadocJar
   archives sourcesJar
 }
 
-install {
-  repositories.mavenInstaller {
-    pom {
-      groupId = project.group
-      project {
+publishing {
+  publications {
+    maven(MavenPublication) {
+      from components.java
+      pom {
         name = 'HKT'
-        packaging 'jar'
-        description 'Interfaces and type-checker for higher kinded types support in Java'
-        url 'https://github.com/derive4j/hkt'
+        packaging = 'jar'
+        description = 'Interfaces and type-checker for higher kinded types support in Java'
+        url = 'https://github.com/derive4j/hkt'
         organization {
           name = 'Derive4J HKT contributors'
         }
         scm {
-          url 'git://github.com/derive4j/hkt.git'
+          url = 'git://github.com/derive4j/hkt.git'
         }
         licenses {
           license {
             name = 'BSD-3'
-            url 'https://github.com/derive4j/hkt/blob/master/LICENSE'
-            distribution 'repo'
+            url = 'https://github.com/derive4j/hkt/blob/master/LICENSE'
+            distribution = 'repo'
           }
         }
         developers {
@@ -118,7 +127,7 @@ install {
           }
           developer {
             name = 'Jean-Baptiste Giraudeau'
-            email 'jb@giraudeau.info'
+            email = 'jb@giraudeau.info'
           }
         }
       }
@@ -131,7 +140,7 @@ artifactoryPublish {
 }
 
 artifactory {
-  contextUrl = 'http://oss.jfrog.org/artifactory'   //The base Artifactory URL if not overridden by the publisher/resolver
+  contextUrl = 'https://oss.jfrog.org/artifactory'   //The base Artifactory URL if not overridden by the publisher/resolver
   publish {
     repository {
       // The Artifactory repository key to publish to :

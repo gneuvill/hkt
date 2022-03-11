@@ -172,7 +172,7 @@ public final class HktProcessor extends AbstractProcessor {
             JdkSpecificApi.map(jdkSpecificApi -> jdkSpecificApi.localTypes(tel)).orElse(Stream.empty());
 
         final List<TypeElement> allTypes =
-            Stream.concat(memberTypes, localTypes).collect(Collectors.toList());
+          Stream.concat(memberTypes, localTypes).toList();
 
         return allTypes.isEmpty()
             ? Stream.empty()
